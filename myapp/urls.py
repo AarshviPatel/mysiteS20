@@ -1,0 +1,12 @@
+from django.contrib import admin
+from django.urls import path,include
+from myapp import views
+
+app_name = 'myapp'
+
+urlpatterns = [
+    path(r'', views.index, name='index'),
+    path(r'about', views.about,name='about'),
+    path(r'<int:top_no>/', views.detail,name='detail')
+
+]
