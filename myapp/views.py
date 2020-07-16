@@ -1,8 +1,8 @@
 from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 
 from .models import Topic, Course
-
+from .forms import *
 
 def index(request):
     top_list = Topic.objects.all().order_by('id')[:10]
@@ -50,3 +50,39 @@ def detail(request,top_no):
     topic= get_object_or_404(Topic,pk=top_no)
     all_courses = Course.objects.filter(topic__name=topic.name)
     return render(request, 'myapp/detail.html', {'topic': topic, 'all_courses':all_courses})
+
+def courses(request):
+    courlist=Course.objects.all().order_by('id')
+    return render(request,'myapp/courses.html',{'courlist':courlist})
+
+def place_order(request):
+    msg=''
+    courlist = Course.objects.all()
+    if request.method == 'POST':
+        form = OrderForm(request.POST)
+        if form.is_valid():
+            order = form.save(commit=False)
+            if order.levels <= order.course.stages:
+                if(order.course.price>150.00):
+                    Course.discount(order.course)
+                order.save()
+                msg = 'Your course has been ordered successfully.'
+            else:
+                msg = 'You exceeded the number of levels for this course.'
+            return render(request, 'myapp/order_response.html', {'msg': msg})
+    else:
+        form = OrderForm()
+    return render(request, 'myapp/placeorder.html', {'form': form, 'msg': msg, 'courlist': courlist})
+
+def coursedetail(request,cour_id):
+    courdetail = Course.objects.get(pk=cour_id)
+    if request.method=='POST':
+        form=InterestForm((request.POST))
+        if form.is_valid():
+            if form['interested']==1:
+                courdetail.interested=courdetail.interested+1
+                courdetail.save()
+        return redirect('myapp:index')
+    else:
+        form = InterestForm()
+        return render(request,'myapp/coursedetail.html',{'form':form,'courdetail':courdetail})
